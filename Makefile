@@ -1,6 +1,5 @@
-CFLAGS = -std=c99 -Wall -Werror -O3 
+CFLAGS = -Wall -Werror -O3 
 GCC = gcc $(CFLAGS)
-#OBJS = huff.o unhuff.o
 VAL = valgrind --tool=memcheck --leak-check=full --show-reachable=yes
 
 all:huff unhuff
@@ -40,7 +39,7 @@ decode:unhuff
 	unhuff proj2_sample/input/text5.txt.huff
 
 memory: huff 
-	$(VAL) huff
+	$(VAL) huff proj2_sample/input/text5.txt
 
 memory2: unhuff
 	$(VAL) unhuff

@@ -4,9 +4,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <time.h>
 #include "huff.h"
 
-#define FAKE_EOF 256 
 //Function to load the input file
 int* Load_File(char* filename){
     FILE *input;
@@ -45,6 +45,7 @@ node* newNode(char ch, unsigned freq){
     temp->freq = freq; 
     return temp; 
 } 
+
 //Function to create a min heap 
 minheap* create_minheap(unsigned capacity)
 { 
@@ -58,7 +59,7 @@ minheap* create_minheap(unsigned capacity)
     minHeap->array  = (node**)malloc(minHeap-> capacity * sizeof(node*)); 
     return minHeap; 
 } 
-// Function to  swap two nodes
+// Function to swap two nodes
 void swapMinHeapNode(node** a, node** b) 
 { 
     node* t = *a; 
@@ -66,11 +67,11 @@ void swapMinHeapNode(node** a, node** b)
     *b = t; 
 } 
 // The minheapify function that is required to make sure the heap properties are not violated
-void minHeapify(minheap* minHeap, int idx) 
+void minHeapify(minheap* minHeap, int index) 
 { 
-    int smallest = idx; 
-    int left = 2 * idx + 1; 
-    int right = 2 * idx + 2; 
+    int smallest = index; 
+    int left = 2 * index + 1; 
+    int right = 2 * index + 2; 
   
     if (left < minHeap->size && minHeap->array[left]-> 
 freq < minHeap->array[smallest]->freq) 
@@ -80,9 +81,9 @@ freq < minHeap->array[smallest]->freq)
 freq < minHeap->array[smallest]->freq) 
         smallest = right; 
   
-    if (smallest != idx) { 
+    if (smallest != index) { 
         swapMinHeapNode(&minHeap->array[smallest], 
-                        &minHeap->array[idx]); 
+                        &minHeap->array[index]); 
         minHeapify(minHeap, smallest); 
     } 
 } 
@@ -122,8 +123,9 @@ void buildMinHeap(minheap* minHeap)
 minheap* createAndBuildMinHeap(char data[], int freq[], int size) // this function is fine
 { 
    minheap* minHeap = create_minheap(size); 
+   int i;
   
-    for (int i = 0; i < size; ++i) 
+    for (i = 0; i < size; ++i) 
         minHeap->array[i] = newNode(data[i], freq[i]); 
 
     minHeap->size = size; 
@@ -137,29 +139,26 @@ int isSizeOne(minheap* minHeap)
     return (minHeap->size == 1); 
 } 
 // Function to find the height of the tree
-int Max_Height(node* root){
-    if(root==NULL)  
+int Max_Height(node* tree){
+    if(tree==NULL)  
        return 0; 
    else 
    { 
-       /* compute the depth of each subtree */
-       int leftdepth = Max_Height(root->left); 
-       int rightdepth= Max_Height(root->right); 
-  
-       /* use the larger one */
-       if (leftdepth > rightdepth) 
+       int Lheight = Max_Height(tree->left); 
+       int Rheight= Max_Height(tree->right); 
+       if (Lheight > Rheight) 
         {
-           return(leftdepth + 1); 
+           return(Lheight + 1); 
            }
        else 
-       return(rightdepth +1); 
+       return(Rheight +1); 
    } 
 }
 
 // The main function that builds Huffman tree 
 node* buildHuffmanTree(char data[], int freq[], int size) 
 { 
-    node *left, *right, *top; 
+    node *left, *right, *sumNode; 
   
     // Step 1: Create a min heap of capacity 
     // equal to size.  Initially, there are 
@@ -184,12 +183,12 @@ node* buildHuffmanTree(char data[], int freq[], int size)
         // left and right children of this new node. 
         // Add this node to the min heap 
         // '$' is a special value for internal nodes, not used 
-        top = newNode('$', left->freq + right->freq); 
+        sumNode = newNode('$', left->freq + right->freq); 
   
-        top->left = left; 
-        top->right = right; 
+        sumNode->left = left; 
+        sumNode->right = right; 
   
-        insertMinHeap(minHeap, top); 
+        insertMinHeap(minHeap, sumNode); 
     } 
   
     // Step 4: The remaining node is the 
@@ -197,14 +196,14 @@ node* buildHuffmanTree(char data[], int freq[], int size)
     return extractMin(minHeap); 
 } 
 // Function to get the leaf count of the tree
-int getLeafNodesCount(node* root)
+int leafCount(node* tree)
 {
-	if(root== NULL)	return 0;
-	if(root->left == NULL && root->right==NULL)	return 1;            
-	return getLeafNodesCount(root->left) + getLeafNodesCount(root->right);      
+	if(tree== NULL)	return 0;
+	if(tree->left == NULL && tree->right==NULL)	return 1;            
+	return leafCount(tree->left) + leafCount(tree->right);      
 }
-// helper functions to create the huffman code table
-void calcHuffCodesHelper(node* root, int **hufftable, int * i, int j)
+// helper function to create the huffman code table
+void gethuffcodes(node* root, int **hufftable, int * i, int j)
 {
 	if (root == NULL)	return;
 
@@ -217,37 +216,33 @@ void calcHuffCodesHelper(node* root, int **hufftable, int * i, int j)
 	
 	if(root->left != NULL)
 	{
-		int numRow = getLeafNodesCount(root->left);
+		int numRow = leafCount(root->left);
 		int k;
  		for(k = *i; k < (*i) + numRow; k++)
 		{
 			hufftable[k][j] = 0;
 		}
-		calcHuffCodesHelper(root->left, hufftable, i, j+1);
+		gethuffcodes(root->left, hufftable, i, j+1);
     	}
 	
 	if(root->right != NULL)
 	{
-		int numRow = getLeafNodesCount(root->right);
+		int numRow = leafCount(root->right);
 		int k;
  		for(k = *i; k < (*i) + numRow; k++)
 		{
 			hufftable[k][j] = 1;
 		}
-		calcHuffCodesHelper(root->right, hufftable, i, j+1);
+		gethuffcodes(root->right, hufftable, i, j+1);
     	}
 }
-void calcHuffCodes(node* root, int ** hufftable)
-{
-  int i = 0;
-  calcHuffCodesHelper(root, hufftable, &i, 1);
-}
 int ** createHuffTable(node* root)
-{
+{   clock_t t2; 
+    t2 = clock(); 
 	int tree_height = Max_Height(root);
-	int leaf_nodes = getLeafNodesCount(root);
+	int leaf_nodes = leafCount(root);
   	int ** hufftable = malloc(sizeof(int*) * leaf_nodes);
-	int i, j;
+	int i, j,k;
 	for(i = 0; i < leaf_nodes; i++)
 	{
 		hufftable[i] = malloc(sizeof(int) * (tree_height + 1));
@@ -256,17 +251,24 @@ int ** createHuffTable(node* root)
 			hufftable[i][j] = -1;
 		}
 	}
-	calcHuffCodes(root, hufftable);
+    gethuffcodes(root, hufftable, &k, 1);
+    t2 = clock() - t2; 
+    double time_taken2 = ((double)t2)/CLOCKS_PER_SEC; // in seconds 
+    printf("Building the codebook took %f \n", time_taken2);
 	return hufftable;
 }
-// call the tree builter function and assign it to a node called tree
-node *HuffmanTree(char data[], int freq[], int size) 
-{ 
-    // Construct Huffman Tree 
-    node* tree = buildHuffmanTree(data, freq, size); 
-  return tree;
-} 
 
+// function to free the tree
+void freetree(node* tree)
+{
+	if (tree == NULL)
+	{
+		return;
+	}
+	freetree(tree -> left);
+	freetree(tree -> right);
+	free(tree);
+}
 // The following functions are meant to write the encoded data to the output file
 // write the tree to the output file as a header
 // works correctly atm however its is not good enough as its char so try the bit header
@@ -287,51 +289,11 @@ void fileheader(node* root,FILE *output)
         fileheader(root->right,output);
     }
 }
-/*
-void write_bit_char(FILE * fphuff, char data)
-{//write an ASCII character to the file 1 bit at a time
-	unsigned int newdata = (unsigned int) data;
-	//1000 0000
-	unsigned char mask = 0x80;
-
-	while (mask > 0)
-	{//loop 8 times for the 8 bits
-		if ((mask & newdata) == mask)
-		{//if the furthest left bit is 1, pack a 1
-			write_bit(fphuff, 1);
-		} else
-		{//if the furthest left bit is 0, pack a 0
-			write_bit(fphuff, 0);
-		}//shift mask to the right
-		mask >>= 1;
-	}
-	return;
-}
-*/
-/*
-void write_bit(FILE * fphuff, unsigned char bit)
-{//packs 1 bit at a time and writes to the file when a byte has been filled up
-	if(!bitspot)
-	{//if we just wrote a byte to the file, reset the buffer byte
-		currentbyte = 0;
-	}
-	//shift the bit to write to the next unoccupied location, then add it to the buffer byte
-	unsigned char temp = bit << (7 - bitspot);
-	currentbyte |= temp;
-
-	if (bitspot == 7)
-	{//if we have filled out byte, write it to the file
-		fwrite(&currentbyte, sizeof(unsigned char), 1, fphuff);
-	}
-	//if we just wrote a full byte to the file, reset the next bit position
-	bitspot = (bitspot + 1) % 8;
-	return;
-}
-*/
+// Function that returns a array/vector that holds the where the char is located in the tree and the number of bits to use
 int* char_pos(int** Huffmantable,char ch,int rowsize,int colsize){
     int* posarray = malloc(sizeof(int) * 2);
-    int j = 1;
-    for(int i = 0; i < rowsize; i++){
+    int j = 1,i;
+    for(i = 0; i < rowsize; i++){
         if(ch == Huffmantable[i][0]){
             posarray[0] = i;
         }
@@ -346,13 +308,12 @@ int* char_pos(int** Huffmantable,char ch,int rowsize,int colsize){
  void encode(char*filename,int **hufftable,node* root,int * ascii_array,int rowsize,int colsize)
  {
    FILE* input= fopen(filename,"r");
-    //strcpy(filename,input); // is this correct?
     strcat(filename,".huff");
     FILE* output = fopen(filename,"wb");
     long filesize;
     char c = 0;
     uint8_t buffer = 0x00;
-    int bufflen = 0; 
+    int bufflen = 0,i; 
     bool check = false;
     int* posarray;
     //find the filesize
@@ -381,7 +342,7 @@ int* char_pos(int** Huffmantable,char ch,int rowsize,int colsize){
         {   check = false;
             posarray = char_pos(hufftable,c,rowsize,colsize);
            //printf("\nThe pos values r %d, %d",posarray[0],posarray[1]);
-            for(int i = 1; i <= posarray[1]; i++)
+            for(i = 1; i <= posarray[1]; i++)
             {
                     buffer = buffer | hufftable[posarray[0]][i] << (7 - bufflen); 
                    // printf("\nbuffer value after adding the bit is %d",buffer);
@@ -433,6 +394,7 @@ int main(int argc, char **argv)
     int i,k = 0,j =0, cnt = 0;
     int height;
     ascii_array =  Load_File(argv[1]);
+    
     for(i = 0; i < 256; i++){
         if(ascii_array[i] != 0){
             cnt++;
@@ -449,18 +411,26 @@ int main(int argc, char **argv)
         }
     } 
     //adding the fake EOF into the min heap node nope didnt work
-    tree = HuffmanTree(chararray,freqarray,cnt);
+    clock_t t; 
+    t = clock(); 
+    //making the tree
+    tree = buildHuffmanTree(chararray,freqarray,cnt);
+    t = clock() - t; 
+    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds 
+    printf("Building the tree took %f \n", time_taken);
     height = Max_Height(tree);
+    //making the cheatsheet
     hufftable = createHuffTable(tree);
-  /* for(i = 0; i < cnt; i++){
-      printf("\nThe char is %c",hufftable[i][0]);
-       for(k = 0; k < height; k++)
-        {
-            printf("\n The Bit value is %d",hufftable[i][k]);
-        }
-
-    }
-    */
+    clock_t t3; 
+    t3 = clock(); 
+    //encoding the inputfile
     encode(argv[1],hufftable,tree,ascii_array,cnt,height); // works but overall huff is super slow
+    t3 = clock() - t3; 
+    double time_taken3 = ((double)t3)/CLOCKS_PER_SEC; // in seconds 
+    printf("Encoding the file took %f seconds \n", time_taken3);
+    //freeing the allocated memory
+    freetree(tree);
+    free(hufftable);
+    free(ascii_array);
    return 0;
 }

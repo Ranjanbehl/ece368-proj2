@@ -4,25 +4,23 @@
 #include <stdint.h>
 #include "unhuff.h"
 
-//Create a new node with the given char value
-node* createnode(char ch)
+// Function to create a new node with the given character 
+node* newNode(char ch)
 {
-	node* Node = malloc(sizeof(Node));
-	Node -> ch = ch;
-	Node -> left = NULL;
-	Node -> right = NULL;
-	return Node;
+	node* temp = (node*)malloc(sizeof(node)); 
+    temp->left = temp->right = NULL; 
+    temp->ch = ch;  
+    return temp; 
 }
-
-//Destroy a tree to free the allocated nodes including all sub-children. 
-void freenode(node* tree)
+//Destroy a tree to free the allocated nodes including children.
+void freetree(node* tree)
 {
 	if (tree == NULL)
 	{
 		return;
 	}
-	freenode(tree -> left);
-	freenode(tree -> right);
+	freetree(tree -> left);
+	freetree(tree -> right);
 	free(tree);
 }
 //Read the header from file
@@ -41,13 +39,13 @@ node* readHeader(FILE * input, int *readFlag,char size)
 	{	cnt++;
 		char ch2;
 		fread(&ch2, 1, 1, input);
-		return createnode(ch2);
+		return newNode(ch2);
 	}
 	else
 	{
 		node*  left = readHeader(input, readFlag,size);
 		node*  right = readHeader(input, readFlag,size);
-		node* newnode = createnode(0);
+		node* newnode = newNode(0);
 		newnode->left = left;
 		newnode->right = right;
 		return newnode;
@@ -140,7 +138,7 @@ void deCompressFile(char * filename)
 	//  printf("\nThe char being written is %c",c);
 	  fputc(c,output);
 	}
-	freenode(huffTree);
+	freetree(huffTree);
 	fclose(input);
 	fclose(output);
 }
